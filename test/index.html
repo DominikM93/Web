@@ -15,6 +15,11 @@
             background: #FFF;
             border: #999 1px solid;
         }
+        
+        #buttons{
+            width: 200px;
+            margin: 20px auto;
+        }
     </style>
     <script>
 
@@ -68,7 +73,7 @@
             t = document.getElementById("t");
             t1 = document.getElementById("t1");
             t2 = document.getElementById("t2");
-            
+
             document.body.addEventListener("keydown", function (e) {
                 keys[e.keyCode] = true;
             });
@@ -76,7 +81,7 @@
             document.body.addEventListener("keyup", function (e) {
                 keys[e.keyCode] = false;
             });
-            
+
             GameLoop();
         }
 
@@ -108,7 +113,7 @@
 
         function Player()
         {
-            this.x = 520;
+            this.x = 480;
             this.y = CANVAS_HEIGHT - 80;
             this.w = 50;
             this.h = 80;
@@ -276,34 +281,34 @@
             g.fill();
             player.draw();
         }
-        
+
         function m(word)
         {
-            if(word === "l")
+            if (word === "l")
             {
                 keys[37] = true;
             }
-            else if(word === "r")
+            else if (word === "r")
             {
                 keys[39] = true;
             }
-            else if(word === "u")
+            else if (word === "u")
             {
                 keys[38] = true;
             }
         }
-        
+
         function m1(word)
         {
-            if(word === "l")
+            if (word === "l")
             {
                 keys[37] = false;
             }
-            else if(word === "r")
+            else if (word === "r")
             {
                 keys[39] = false;
             }
-            else if(word === "u")
+            else if (word === "u")
             {
                 keys[38] = false;
             }
@@ -363,9 +368,12 @@
             Your browser does not support the HTML5 'Canvas' tag.
         </canvas>
         <br>
-        <input id="left" type="button" value="Left" onmousedown="m('l')" onmouseup="m1('l')"/>
-        <input id="up" type="button" value="Up" onmousedown="m('u')" onmouseup="m1('u')"/>
-        <input id="right" type="button" value="Right" onmousedown="m('r')" onmouseup="m1('r')"/>
+        <div id="buttons">
+            <input id="left" type="button" value="Left" onmousedown="m('l')" onmouseup="m1('l')"/>
+            <input id="up" type="button" value="Up" onmousedown="m('u')" onmouseup="m1('u')"/>
+            <input id="right" type="button" value="Right" onmousedown="m('r')" onmouseup="m1('r')"/>
+        </div>
+
     </div>
 
     <div id="t"></div>
