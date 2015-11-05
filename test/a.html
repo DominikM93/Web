@@ -1,0 +1,374 @@
+<!DOCTYPE HTML>
+<head>
+    <title>2D game</title>
+    <style>
+        body{
+            background: #333;
+        }
+
+        #canvasContainer{
+            width: 1000px;
+            margin: 20px auto;
+        }
+
+        #gameCanvas{
+            background: #FFF;
+            border: #999 1px solid;
+        }
+    </style>
+    <script>
+
+        var t;
+        var t1;
+        var t2;
+        var CANVAS_WIDTH = 1040;
+        var CANVAS_HEIGHT = 560;
+        var canvas;
+        var g;
+        var offsetX = 0;
+        var offsetY = 0;
+        var blockSize = 80;
+
+        var background;
+        var Up, Left, Right;
+        var onGround = false;
+        var keys = [];
+        var gravity = 0.15;
+
+        var player = new Player();
+
+        var bg = new Image();
+        bg.src = "img/bg.png";
+
+        var block = new Image();
+        block.src = "img/block.png";
+
+        var enemy = new Image();
+        enemy.src = "img/enemy.png";
+
+        var plat = new Image();
+        plat.src = "img/platform.png";
+
+        var p = [];
+
+        window.onload = onAllAssetsLoaded;
+        document.write("<div id='loadingMessage'>Loading...</div>");
+
+        function onAllAssetsLoaded()
+        {
+            document.getElementById('loadingMessage').style.visibility = "hidden";
+
+            canvas = document.getElementById("gameCanvas");
+            g = canvas.getContext("2d");
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+
+            background = new Background();
+
+            t = document.getElementById("t");
+            t1 = document.getElementById("t1");
+            t2 = document.getElementById("t2");
+            
+            document.body.addEventListener("keydown", function (e) {
+                keys[e.keyCode] = true;
+            });
+
+            document.body.addEventListener("keyup", function (e) {
+                keys[e.keyCode] = false;
+            });
+            
+            GameLoop();
+        }
+
+        function GameLoop()
+        {
+            g.clearRect(0, 0, canvas.width, canvas.height);
+            background.render();
+            setUp();
+            move();
+            setTimeout(GameLoop, 1000 / 60);
+        }
+
+        function Background()
+        {
+            this.x = 0;
+            this.y = 0;
+            this.w = bg.width;
+            this.h = bg.height;
+
+            this.render = function ()
+            {
+                g.drawImage(bg, this.x--, 0);
+                if (this.x <= -259)
+                {
+                    this.x = 0;
+                }
+            };
+        }
+
+        function Player()
+        {
+            this.x = 520;
+            this.y = CANVAS_HEIGHT - 80;
+            this.w = 50;
+            this.h = 80;
+            this.speed = 3;
+            this.velX = 0;
+            this.velY = 0;
+            this.jumping = false;
+            this.grounded = false;
+            this.wallL = false;
+            this.wallR = false;
+
+            this.draw = draw;
+            function draw()
+            {
+                var p = new Image();
+                p.src = "img/player.png";
+                g.drawImage(p, this.x, this.y, this.w, this.h);
+            }
+        }
+
+        var Platform = function (newX, newY)
+        {
+            var that = this;
+
+            that.x = newX;
+            that.y = newY;
+            that.w = 80;
+            that.h = 80;
+
+            that.draw = function () {
+                g.drawImage(block, that.x, that.y, that.w, that.h);
+            };
+
+            return that;
+        };
+
+        var Enemy = function (X, Y)
+        {
+            var that = this;
+
+            that.x = X;
+            that.y = Y;
+            that.w = 80;
+            that.h = 80;
+
+            that.draw = function () {
+                g.drawImage(enemy, that.x, that.y, that.w, that.h);
+            }
+            ;
+
+            return that;
+        };
+
+        function setUp()
+        {
+            p = [];
+            //Left border
+            p.push({
+                x: offsetX - 10,
+                y: 0,
+                width: 10,
+                height: CANVAS_HEIGHT
+            });
+            //Floor
+            p.push({
+                x: offsetX,
+                y: CANVAS_HEIGHT - blockSize,
+                width: 6240,
+                height: blockSize
+            });
+            //Right border
+            p.push({
+                x: offsetX + 6240,
+                y: 0,
+                width: 10,
+                height: CANVAS_HEIGHT
+            });
+
+            //Obsticals
+
+            p.push({
+                x: offsetX + (blockSize) * 8,
+                y: CANVAS_HEIGHT - 160,
+                width: 80,
+                height: 80
+            });
+        }
+
+        function move()
+        {
+            if (keys[38])
+            {
+                // up arrow
+                if (!player.jumping && player.grounded)
+                {
+                    player.jumping = true;
+                    player.grounded = false;
+                    player.velY = -player.speed * 2;
+                }
+            }
+
+            if (keys[39])
+            {
+                // right arrow
+                if (player.wallR === false)
+                {
+                    offsetX -= 3;
+                    player.wallL = false;
+                }
+            }
+            if (keys[37])
+            {
+                // left arrow
+                if (player.wallL === false)
+                {
+                    offsetX += 3;
+                    player.wallR = false;
+                }
+            }
+
+            player.velY += gravity;
+
+            g.fillStyle = "blue";
+            g.beginPath();
+
+            player.grounded = false;
+
+            for (var i = 0; i < p.length; i++) {
+                g.rect(p[i].x, p[i].y, p[i].width, p[i].height);
+
+                var dir = colCheck(player, p[i]);
+
+                if (dir === "r")
+                {
+                    player.velX = 0;
+                    player.wallR = true;
+                    player.x = 520;
+                    player.jumping = false;
+                }
+                if (dir === "l")
+                {
+                    player.velX = 0;
+                    player.wallL = true;
+                    player.x = 520;
+                    player.jumping = false;
+                }
+                else if (dir === "b")
+                {
+                    player.grounded = true;
+                    player.jumping = false;
+                }
+                else if (dir === "t")
+                {
+                    player.velY *= -1;
+                }
+            }
+
+            if (player.grounded) {
+                player.velY = 0;
+            }
+
+            player.x += player.velX;
+            player.y += player.velY;
+
+            g.fill();
+            player.draw();
+        }
+        
+        function m(word)
+        {
+            if(word === "l")
+            {
+                keys[37] = true;
+            }
+            else if(word === "r")
+            {
+                keys[39] = true;
+            }
+            else if(word === "u")
+            {
+                keys[38] = true;
+            }
+        }
+        
+        function m1(word)
+        {
+            if(word === "l")
+            {
+                keys[37] = false;
+            }
+            else if(word === "r")
+            {
+                keys[39] = false;
+            }
+            else if(word === "u")
+            {
+                keys[38] = false;
+            }
+        }
+
+        function colCheck(shapeA, shapeB) {
+
+            // get the vectors to check against
+            var vX = (shapeA.x + (shapeA.w / 2)) - (shapeB.x + (shapeB.width / 2));
+            var vY = (shapeA.y + (shapeA.h / 2)) - (shapeB.y + (shapeB.height / 2));
+            // add the half widths and half heights of the objects
+            var hWidths = (shapeA.w / 2) + (shapeB.width / 2);
+            var hHeights = (shapeA.h / 2) + (shapeB.height / 2);
+            var colDir = null;
+
+            // if the x and y vector are less than the half width or half height, they we must be inside the object, causing a collision
+            if (Math.abs(vX) < hWidths && Math.abs(vY) < hHeights)
+            {
+                // figures out on which side we are colliding (top, bottom, left, or right)
+                var oX = hWidths - Math.abs(vX);
+                var oY = hHeights - Math.abs(vY);
+
+                if (oX >= oY)
+                {
+                    if (vY > 0)
+                    {
+                        colDir = "t";
+                        shapeA.y += oY;
+                    }
+                    else
+                    {
+                        colDir = "b";
+                        shapeA.y -= oY;
+                    }
+                }
+                else
+                {
+                    if (vX > 0)
+                    {
+                        colDir = "l";
+                        shapeA.x += oX;
+                    }
+                    else
+                    {
+                        colDir = "r";
+                        shapeA.x -= oX;
+                    }
+                }
+            }
+            return colDir;
+        }
+    </script>
+</head>
+<body>
+    <div id="canvasContainer">
+        <canvas id = "gameCanvas" tabindex="1" width="1000">
+            Your browser does not support the HTML5 'Canvas' tag.
+        </canvas>
+        <br>
+        <input id="left" type="button" value="Left" onmousedown="m('l')" onmouseup="m1('l')"/>
+        <input id="up" type="button" value="Up" onmousedown="m('u')" onmouseup="m1('u')"/>
+        <input id="right" type="button" value="Right" onmousedown="m('r')" onmouseup="m1('r')"/>
+    </div>
+
+    <div id="t"></div>
+    <div id="t1"></div>
+    <div id="t2"></div>
+</body>
