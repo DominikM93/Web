@@ -15,7 +15,7 @@
             background: #FFF;
             border: #999 1px solid;
         }
-        
+
         #buttons{
             width: 200px;
             margin: 20px auto;
@@ -41,6 +41,12 @@
         var gravity = 0.15;
 
         var player = new Player();
+        var enemies = [];
+        var numEnemy = 2;
+        var eW = 57;
+        var eH = 80;
+
+        var blasts = new Array(5);
 
         var bg = new Image();
         bg.src = "img/bg.png";
@@ -54,7 +60,12 @@
         var plat = new Image();
         plat.src = "img/platform.png";
 
+        var jump = new Audio();
+        jump.src = "sound/j.mp3";
+
         var p = [];
+
+
 
         window.onload = onAllAssetsLoaded;
         document.write("<div id='loadingMessage'>Loading...</div>");
@@ -74,6 +85,11 @@
             t1 = document.getElementById("t1");
             t2 = document.getElementById("t2");
 
+            for (var i = 0; i < numEnemy; i++)
+            {
+                enemies[i] = new Enemy((Math.floor((Math.random() * CANVAS_WIDTH) + 1)), 300);
+            }
+
             document.body.addEventListener("keydown", function (e) {
                 keys[e.keyCode] = true;
             });
@@ -91,6 +107,9 @@
             background.render();
             setUp();
             move();
+            fire();
+            //e();
+            //checkE();
             setTimeout(GameLoop, 1000 / 60);
         }
 
@@ -111,6 +130,28 @@
             };
         }
 
+        function fire()
+        {
+            for (var i = 0; i < blasts.length; i++)
+            {
+                if (blasts[i] !== undefined)
+                {
+                    blasts[i].draw();
+                }
+            }
+
+        }
+        /*function e()
+         {
+         for (var i = 0; i < enemies.length; i++)
+         {
+         if (enemies[i] !== undefined)
+         {
+         enemies[i].draw(offsetX);
+         }
+         }
+         }*/
+
         function Player()
         {
             this.x = 480;
@@ -124,47 +165,108 @@
             this.grounded = false;
             this.wallL = false;
             this.wallR = false;
+            this.look = "r";
+            this.pic = "player.png";
 
             this.draw = draw;
             function draw()
             {
                 var p = new Image();
-                p.src = "img/player.png";
+                p.src = "img/" + this.pic;
                 g.drawImage(p, this.x, this.y, this.w, this.h);
             }
         }
 
-        var Platform = function (newX, newY)
+        function Blast(playerX, playerY, playerW, playerH)
         {
-            var that = this;
+            this.x = playerX + (playerW / 2);
+            this.y = playerY + (playerH / 2);
+            this.w = 10;
+            this.h = 10;
+            this.speed = 50;
+            this.distance = 0;
+            this.direction = "l";
+            var interval = setInterval(move, 100 / this.speed);
+            var firingState = true;
+            var moving = true;
 
-            that.x = newX;
-            that.y = newY;
-            that.w = 80;
-            that.h = 80;
+            this.move = move;
+            function move()
+            {
+                if (moving)
+                {
+                    this.x--;
+                }
+            }
 
-            that.draw = function () {
-                g.drawImage(block, that.x, that.y, that.w, that.h);
-            };
+            this.destroy = destroy;
+            function destroy()
+            {
+                clearInterval(interval);
+                firingState = false;
+            }
 
-            return that;
-        };
+            this.isFiring = isFiring;
+            function isFiring()
+            {
+                return firingState;
+            }
+
+            this.draw = draw;
+            function draw()
+            {
+                if (isFiring())
+                {
+                    g.fillStyle = "red";
+                    g.fillRect(this.x, this.y, this.w, this.h);
+                }
+            }
+        }
 
         var Enemy = function (X, Y)
         {
-            var that = this;
+            this.x = X;
+            this.y = Y;
+            this.w = 57;
+            this.h = 80;
+            this.velY = 0;
+            this.velX = 0;
+            this.jumping = false;
+            this.grounded = false;
 
-            that.x = X;
-            that.y = Y;
-            that.w = 80;
-            that.h = 80;
-
-            that.draw = function () {
-                g.drawImage(enemy, that.x, that.y, that.w, that.h);
+            this.draw = draw;
+            function draw(newX)
+            {
+                var e = new Image();
+                e.src = "img/e.png";
+                g.drawImage(e, newX + this.x, this.y, this.w, this.h);
             }
-            ;
 
-            return that;
+            this.isHit = isHit;
+            function isHit()
+            {
+                var max = 0;
+
+                for (var i = 0; i < p.length; i++)
+                {
+                    if (i > 1)
+                    {
+                        if (p[i] !== undefined)
+                        {
+                            if ((this.y + this.h) >= p[i].y)
+                            {
+                                //alert("y+h: " + (this.y + this.h) + " py: " + p[i].y);
+                                if ((p[i].y - this.h) > max)
+                                {
+                                    max = p[i].y - this.h;
+                                }
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
         };
 
         function setUp()
@@ -177,19 +279,19 @@
                 width: 10,
                 height: CANVAS_HEIGHT
             });
+            //Right border
+            p.push({
+                x: offsetX + 4160,
+                y: 0,
+                width: 10,
+                height: CANVAS_HEIGHT
+            });
             //Floor
             p.push({
                 x: offsetX,
                 y: CANVAS_HEIGHT - blockSize,
-                width: 6240,
+                width: 4160,
                 height: blockSize
-            });
-            //Right border
-            p.push({
-                x: offsetX + 6240,
-                y: 0,
-                width: 10,
-                height: CANVAS_HEIGHT
             });
 
             //Obsticals
@@ -197,10 +299,101 @@
             p.push({
                 x: offsetX + (blockSize) * 8,
                 y: CANVAS_HEIGHT - 160,
-                width: 80,
-                height: 80
+                width: blockSize * 7,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 9,
+                y: CANVAS_HEIGHT - (blockSize) * 3,
+                width: blockSize * 5,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 17,
+                y: CANVAS_HEIGHT - (blockSize) * 3,
+                width: blockSize * 4,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 21,
+                y: CANVAS_HEIGHT - (blockSize) * 4,
+                width: blockSize * 4,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 25,
+                y: CANVAS_HEIGHT - (blockSize) * 2,
+                width: blockSize * 4,
+                height: blockSize
+            });
+
+
+
+            p.push({
+                x: offsetX + (blockSize) * 29,
+                y: CANVAS_HEIGHT - 160,
+                width: blockSize * 7,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 30,
+                y: CANVAS_HEIGHT - (blockSize) * 3,
+                width: blockSize * 5,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 38,
+                y: CANVAS_HEIGHT - (blockSize) * 3,
+                width: blockSize * 4,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 42,
+                y: CANVAS_HEIGHT - (blockSize) * 4,
+                width: blockSize * 4,
+                height: blockSize
+            });
+            p.push({
+                x: offsetX + (blockSize) * 46,
+                y: CANVAS_HEIGHT - (blockSize) * 2,
+                width: blockSize * 4,
+                height: blockSize
             });
         }
+
+        /*function checkE()
+         {
+         for (var i = 0; i < enemies.length; i++)
+         {
+         if (enemies[i] !== undefined)
+         {
+         enemies[i].draw(offsetX);
+         
+         enemies[i].velY += gravity;
+         enemies[i].y += enemies[i].velY;
+         
+         for (var j = 0; j < p.length; j++)
+         {
+         var dir = colCheck(enemies[i], p[i]);
+         
+         if (dir === "b")
+         {
+         enemies[i].grounded = true;
+         enemies[i].jumping = false;
+         
+         if (enemies[i].grounded)
+         {
+         enemies[i].velY = 0;
+         }
+         enemies[i].x += enemies[i].velX;
+         enemies[i].y += enemies[i].velY;
+         }
+         }
+         //enemies[i].isHit();
+         
+         }
+         }
+         }*/
 
         function move()
         {
@@ -212,6 +405,7 @@
                     player.jumping = true;
                     player.grounded = false;
                     player.velY = -player.speed * 2;
+                    jump.play();
                 }
             }
 
@@ -222,8 +416,10 @@
                 {
                     offsetX -= 3;
                     player.wallL = false;
+                    player.pic = "player.png";
                 }
             }
+
             if (keys[37])
             {
                 // left arrow
@@ -231,6 +427,19 @@
                 {
                     offsetX += 3;
                     player.wallR = false;
+                    player.pic = "player1.png";
+                }
+            }
+            if (keys[32])
+            {
+                // space arrow
+                for (var i = 0; i < blasts.length; i++)
+                {
+                    if ((blasts[i] === undefined) || (!blasts[i].isFiring()))
+                    {
+                        blasts[i] = new Blast(player.x, player.y, player.w, player.h);
+                        break;
+                    }
                 }
             }
 
@@ -282,40 +491,8 @@
             player.draw();
         }
 
-        function m(word)
+        function colCheck(shapeA, shapeB)
         {
-            if (word === "l")
-            {
-                keys[37] = true;
-            }
-            else if (word === "r")
-            {
-                keys[39] = true;
-            }
-            else if (word === "u")
-            {
-                keys[38] = true;
-            }
-        }
-
-        function m1(word)
-        {
-            if (word === "l")
-            {
-                keys[37] = false;
-            }
-            else if (word === "r")
-            {
-                keys[39] = false;
-            }
-            else if (word === "u")
-            {
-                keys[38] = false;
-            }
-        }
-
-        function colCheck(shapeA, shapeB) {
-
             // get the vectors to check against
             var vX = (shapeA.x + (shapeA.w / 2)) - (shapeB.x + (shapeB.width / 2));
             var vY = (shapeA.y + (shapeA.h / 2)) - (shapeB.y + (shapeB.height / 2));
@@ -360,6 +537,38 @@
             }
             return colDir;
         }
+
+        function c(word)
+        {
+            if (word === "l")
+            {
+                if (player.wallL === false)
+                {
+                    offsetX += 3;
+                    player.wallR = false;
+                    player.pic = "player1.png";
+                }
+            }
+            else if (word === "r")
+            {
+                if (player.wallR === false)
+                {
+                    offsetX -= 3;
+                    player.wallL = false;
+                    player.pic = "player.png";
+                }
+            }
+            else if (word === "u")
+            {
+                if (!player.jumping && player.grounded)
+                {
+                    player.jumping = true;
+                    player.grounded = false;
+                    player.velY = -player.speed * 2;
+                    jump.play();
+                }
+            }
+        }
     </script>
 </head>
 <body>
@@ -369,9 +578,9 @@
         </canvas>
         <br>
         <div id="buttons">
-            <input id="left" type="button" value="Left" onmousedown="m('l')" onmouseup="m1('l')"/>
-            <input id="up" type="button" value="Up" onmousedown="m('u')" onmouseup="m1('u')"/>
-            <input id="right" type="button" value="Right" onmousedown="m('r')" onmouseup="m1('r')"/>
+            <input id="left" type="button" value="Left" onclick="c('l')"/>
+            <input id="up" type="button" value="Up" onclick="c('u')" />
+            <input id="right" type="button" value="Right" onclick="c('r')"/>
         </div>
 
     </div>
