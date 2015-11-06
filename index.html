@@ -20,7 +20,7 @@
             width: 200px;
             margin: 20px auto;
         }
-        
+
         input{
             width: 50px;
             height: 50px;
@@ -67,9 +67,13 @@
 
         var jump = new Audio();
         jump.src = "sound/j.mp3";
+        var walk = new Audio();
+        walk.src = "sound/walk.mp3";
+        var power = new Audio();
+        power.src = "sound/power.mp3";
 
         var p = [];
-
+        var gameState = false;
 
 
         window.onload = onAllAssetsLoaded;
@@ -108,14 +112,25 @@
 
         function GameLoop()
         {
-            g.clearRect(0, 0, canvas.width, canvas.height);
-            background.render();
-            setUp();
-            move();
-            fire();
-            //e();
-            //checkE();
-            setTimeout(GameLoop, 1000 / 60);
+            if (!gameState)
+            {
+                g.clearRect(0, 0, canvas.width, canvas.height);
+                background.render();
+                setUp();
+                move();
+                fire();
+                //e();
+                //checkE();
+                setTimeout(GameLoop, 1000 / 60);
+            }
+            else if (gameState)
+            {
+                g.clearRect(0, 0, canvas.width, canvas.height);
+                background.render();
+                g.font = "30px Arial";
+                g.fillText("You won!", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+
+            }
         }
 
         function Background()
@@ -146,6 +161,7 @@
             }
 
         }
+
         /*function e()
          {
          for (var i = 0; i < enemies.length; i++)
@@ -402,110 +418,140 @@
 
         function move()
         {
-            if(offsetX === 800)
+            if (offsetX <= -3590)
             {
-                alert("1");
+                //win
+                gameState = true;
             }
-            if (keys[38])
+            else if (offsetX >= -3590)
             {
-                // up arrow
-                if (!player.jumping && player.grounded)
+                gameState = false;
+                if (keys[38])
                 {
-                    player.jumping = true;
-                    player.grounded = false;
-                    player.velY = -player.speed * 2;
-                    jump.play();
-                }
-            }
-
-            if (keys[39])
-            {
-                // right arrow
-                if (player.wallR === false)
-                {
-                    offsetX -= 3;
-                    player.wallL = false;
-                    player.pic = "player.png";
-                }
-            }
-
-            if (keys[37])
-            {
-                // left arrow
-                if (player.wallL === false)
-                {
-                    offsetX += 3;
-                    player.wallR = false;
-                    player.pic = "player1.png";
-                }
-            }
-            if (keys[32])
-            {
-                // space arrow
-                for (var i = 0; i < blasts.length; i++)
-                {
-                    if ((blasts[i] === undefined) || (!blasts[i].isFiring()))
+                    // up arrow
+                    if (!player.jumping && player.grounded)
                     {
-                        blasts[i] = new Blast(player.x, player.y, player.w, player.h);
-                        break;
+                        player.jumping = true;
+                        player.grounded = false;
+                        player.velY = -player.speed * 2;
+                        jump.play();
                     }
                 }
+
+                if (keys[39])
+                {
+                    // right arrow
+                    if (player.wallR === false)
+                    {
+                        offsetX -= 3;
+                        player.wallL = false;
+                        player.pic = "player.png";
+                        player.look = "r";
+                        if (player.grounded)
+                        {
+                            walk.play();
+                        }
+                    }
+                }
+
+                if (keys[37])
+                {
+                    // left arrow
+                    if (player.wallL === false)
+                    {
+                        offsetX += 3;
+                        player.wallR = false;
+                        player.pic = "player1.png";
+                        player.look = "l";
+                        if (player.grounded)
+                        {
+                            walk.play();
+                        }
+                    }
+                }
+                if (keys[32])
+                {
+                    // space arrow
+                    if (player.look === "r")
+                    {
+                        player.pic = "playerPower.png";
+                        power.play();
+                    }
+                    else if (player.look === "l")
+                    {
+                        player.pic = "player1Power.png";
+                        power.play();
+                    }
+                }
+                if(!keys[32])
+                {
+                    if (player.look === "r")
+                    {
+                        player.pic = "player.png";
+                        power.pause();
+                    }
+                    else if (player.look === "l")
+                    {
+                        player.pic = "player1.png";
+                        power.pause();
+                    }
+                }
+
+                player.velY += gravity;
+
+                g.fillStyle = "blue";
+                g.beginPath();
+                player.grounded = false;
+                for (var i = 0; i < p.length; i++) {
+                    g.rect(p[i].x, p[i].y, p[i].width, p[i].height);
+
+                    var dir = colCheck(player, p[i]);
+
+                    if (dir === "r")
+                    {
+                        player.velX = 0;
+                        player.wallR = true;
+                        player.x = 520;
+                        player.jumping = false;
+                    }
+                    if (dir === "l")
+                    {
+                        player.velX = 0;
+                        player.wallL = true;
+                        player.x = 520;
+                        player.jumping = false;
+                    }
+                    else if (dir === "b")
+                    {
+                        player.grounded = true;
+                        player.jumping = false;
+                    }
+                    else if (dir === "t")
+                    {
+                        player.velY *= -1;
+                    }
+                }
+
+                if (player.grounded) {
+                    player.velY = 0;
+                }
+
+                player.x += player.velX;
+                player.y += player.velY;
+
+                g.fill();
+                player.draw();
             }
-
-            player.velY += gravity;
-
-            g.fillStyle = "blue";
-            g.beginPath();
-
-            player.grounded = false;
-
-            for (var i = 0; i < p.length; i++) {
-                g.rect(p[i].x, p[i].y, p[i].width, p[i].height);
-
-                var dir = colCheck(player, p[i]);
-
-                if (dir === "r")
-                {
-                    player.velX = 0;
-                    player.wallR = true;
-                    player.x = 520;
-                    player.jumping = false;
-                }
-                if (dir === "l")
-                {
-                    player.velX = 0;
-                    player.wallL = true;
-                    player.x = 520;
-                    player.jumping = false;
-                }
-                else if (dir === "b")
-                {
-                    player.grounded = true;
-                    player.jumping = false;
-                }
-                else if (dir === "t")
-                {
-                    player.velY *= -1;
-                }
-            }
-
-            if (player.grounded) {
-                player.velY = 0;
-            }
-
-            player.x += player.velX;
-            player.y += player.velY;
-
-            g.fill();
-            player.draw();
         }
+
+
 
         function colCheck(shapeA, shapeB)
         {
             // get the vectors to check against
             var vX = (shapeA.x + (shapeA.w / 2)) - (shapeB.x + (shapeB.width / 2));
             var vY = (shapeA.y + (shapeA.h / 2)) - (shapeB.y + (shapeB.height / 2));
-            // add the half widths and half heights of the objects
+            // add the half widths and half heights of the objects             
             var hWidths = (shapeA.w / 2) + (shapeB.width / 2);
             var hHeights = (shapeA.h / 2) + (shapeB.height / 2);
             var colDir = null;
@@ -517,8 +563,7 @@
                 var oX = hWidths - Math.abs(vX);
                 var oY = hHeights - Math.abs(vY);
 
-                if (oX >= oY)
-                {
+                if (oX >= oY) {
                     if (vY > 0)
                     {
                         colDir = "t";
@@ -530,8 +575,7 @@
                         shapeA.y -= oY;
                     }
                 }
-                else
-                {
+                else {
                     if (vX > 0)
                     {
                         colDir = "l";
